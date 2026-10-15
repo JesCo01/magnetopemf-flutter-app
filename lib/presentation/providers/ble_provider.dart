@@ -213,7 +213,15 @@ class BleNotifier extends StateNotifier<BleState> {
       return false;
     }
 
-    final char = await _bleRepo.getWriteCharacteristic(model.device);
+    BluetoothCharacteristic? char;
+    try {
+      char = await _bleRepo.getWriteCharacteristic(model.device);
+    } on BleSetupException catch (e) {
+      await _bleRepo.disconnectDevice(model.device);
+      _clearConnectionState();
+      alertNotifier.warning('No se pudo conectar', e.message);
+      return false;
+    }
     if (char == null) {
       await _bleRepo.disconnectDevice(model.device);
       _clearConnectionState();
@@ -221,11 +229,20 @@ class BleNotifier extends StateNotifier<BleState> {
     }
 
     try {
+      _messageSubscription = char.onValueReceived.listen(receiveFrame);
       await char.setNotifyValue(true);
+      if (!char.isNotifying) {
+        throw const BleSetupException(
+            'El equipo no habilito las notificaciones.');
+      }
     } catch (e) {
       debugPrint('Error enabling notifications: $e');
+      await _messageSubscription?.cancel();
+      _messageSubscription = null;
       await _bleRepo.disconnectDevice(model.device);
       _clearConnectionState();
+      alertNotifier.warning('No se pudo conectar',
+          'El equipo no habilito las notificaciones. Reinicialo y vuelve a buscarlo.');
       return false;
     }
 
@@ -264,10 +281,12 @@ class BleNotifier extends StateNotifier<BleState> {
       synchronized: false,
     );
 
-    _messageSubscription = char.onValueReceived.listen(receiveFrame);
-
     if (await queryStatus() == null) {
       await disconnect(userInitiated: false);
+      alertNotifier.warning(
+          'Sin respuesta del equipo',
+          'El enlace Bluetooth se abrio, pero el ESP32 no respondio al estado. '
+              'Comprueba que la app y el firmware esten actualizados.');
       return false;
     }
     await saveDevice(model);

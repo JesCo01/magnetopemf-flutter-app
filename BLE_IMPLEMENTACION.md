@@ -10,15 +10,15 @@ Esta versión corresponde a la sección 2.3.8 de la tesis. Firmware: [repositori
 - Los seis perfiles internos son configuraciones de banco. Las rutinas de envolventes triangular/trapezoidal permanecen en el código, pero el intérprete rechaza esos modos en la versión de ensayo.
 - Batería: ADC GPIO34, diez muestras de `analogReadMilliVolts`, divisor nominal 68 kΩ/10 kΩ (factor 7,8). El porcentaje es un indicador lineal entre 12 y 16,8 V; no es coulomb counting. `BAT_CAL_GAIN=1` y `BAT_CAL_OFFSET_V=0` son valores nominales, no resultados de una calibración externa. El BMS sigue protegiendo cada celda.
 
-## Primer vínculo y revocación
+## Conexion BLE directa
 
-1. Cargar el firmware y abrir la consola USB a 115200 baudios, con terminador de línea.
-2. Con el equipo en espera y sin teléfono conectado, enviar `PAIR`.
-3. Durante los siguientes 60 segundos, buscar el equipo desde la app e introducir en el diálogo de Android el PIN de seis dígitos mostrado por la consola.
-4. Se usa LE Secure Connections con MITM, claves de 16 bytes y bonding. Las lecturas/escrituras GATT exigen cifrado autenticado. Las órdenes y notificaciones se habilitan después de la autenticación.
-5. Los siguientes accesos reutilizan el vínculo guardado. `UNPAIR`, enviado por USB en reposo y sin conexión BLE, elimina los vínculos del equipo. También se debe olvidar el equipo en Android antes de vincular de nuevo.
+1. Encender el ESP32 con el firmware compatible.
+2. Activar Bluetooth y conceder los permisos solicitados por la app.
+3. Buscar `MAGNETO_TESIS`, conectarse y esperar la sincronizacion del estado.
 
-El nombre y los UUID no son credenciales. Se autoriza al teléfono vinculado, no se identifica a una persona mediante BLE. La ventana de alta no se abre automáticamente al encender.
+El firmware actual acepta conexiones directas, sin comando USB `PAIR`, PIN ni ventana de 60 segundos. La app no solicita bonding y el firmware no exige cifrado autenticado para leer o escribir la caracteristica. Guardar un equipo en la app conserva su identificador para reconectarlo; no constituye una autorizacion del telefono en el ESP32.
+
+La app verifica escritura, notificaciones y el descriptor CCCD en Android. Si la tabla GATT esta incompleta, renueva la cache una vez y redescubre los servicios. Solo completa la conexion cuando recibe una respuesta de estado del firmware.
 
 ## Transporte y correlación
 
@@ -38,7 +38,7 @@ El tamaño de fragmento es `min(MTU,512)-3`, incluida la cabecera. Las escritura
 
 ## Estado y sesión
 
-El ESP32 transmite estado JSON completo cada segundo mientras hay un vínculo autorizado y batería cada cinco segundos. `status` solicita ambos. Los estados incluyen el tiempo programado/restante/transcurrido, el modo en `channels[0].wave`, el identificador de sesión y el motivo de parada.
+El ESP32 transmite estado JSON completo cada segundo mientras hay una conexion BLE y batería cada cinco segundos. `status` solicita ambos. Los estados incluyen el tiempo programado/restante/transcurrido, el modo en `channels[0].wave`, el identificador de sesión y el motivo de parada.
 
 Inicio, pausa, reanudación y parada esperan confirmación de aplicación durante dos segundos. Una ausencia de respuesta provoca una consulta de estado. La parada cierra el historial tras `stopped` o `IDLE`; la respuesta `stopped` incluye el estado terminal y el tiempo contabilizado por el controlador.
 
@@ -73,7 +73,7 @@ python tests/run_tests.py --arduino-json RUTA/ArduinoJson/src
 
 Las pruebas de transporte cubren MTU 23, 64, 247 y 512, Unicode, orden, duplicados, pérdida, caducidad y límite de tamaño. Las pruebas de la app usan los proveedores reales con radio e historial sustituidos: rechazo de inicio, sincronización, borradores en pausa, parada confirmada, pérdida de enlace y recuperación sin doble inicio. La prueba de solicitudes usa el correlador y receptor reales para descartar respuestas de otro identificador y consultar `status` tras un timeout. El controlador nativo prueba rechazos sin cambios parciales, temporización y salida detenida.
 
-Las pruebas automatizadas no utilizan el teléfono ni las bobinas. El alcance experimental, incluida autenticación con teléfonos físicos, latencia de desconexión, GPIO4 y calibración externa del divisor, se registra en 2.3.11; este documento no atribuye resultados medidos a las compilaciones o simulaciones.
+Las pruebas automatizadas no utilizan el teléfono ni las bobinas. El alcance experimental, incluida la conexion con telefonos fisicos, latencia de desconexión, GPIO4 y calibración externa del divisor, se registra en 2.3.11; este documento no atribuye resultados medidos a las compilaciones o simulaciones.
 
 ### Resultado de la revisión del 20 de septiembre de 2026
 

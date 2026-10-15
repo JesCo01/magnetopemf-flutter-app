@@ -339,17 +339,15 @@ class DashboardScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
 
-            // Wave constrained properly
-            ClipRect(
-              child: SizedBox(
-                height: 32, // More compact wave
-                width: double.infinity,
-                child: AnimatedWave(
-                  isRunning:
-                      dashboardState.isRunning && !dashboardState.isPaused,
-                  hz: dashboardState.hz,
-                  pwm: dashboardState.pwm,
-                ),
+            SizedBox(
+              height: 125,
+              width: double.infinity,
+              child: AnimatedWave(
+                isRunning:
+                    dashboardState.isRunning && !dashboardState.isPaused,
+                hz: dashboardState.hz,
+                pwm: dashboardState.pwm,
+                waveform: dashboardState.waveform,
               ),
             ),
 

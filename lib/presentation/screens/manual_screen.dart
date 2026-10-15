@@ -353,6 +353,23 @@ class _HeaderStatus extends StatelessWidget {
   }
 }
 
+class _FullWidthTrackShape extends RoundedRectSliderTrackShape {
+  const _FullWidthTrackShape();
+
+  @override
+  Rect getPreferredRect({
+    required RenderBox parentBox,
+    Offset offset = Offset.zero,
+    required SliderThemeData sliderTheme,
+    bool isEnabled = false,
+    bool isDiscrete = false,
+  }) {
+    final trackHeight = sliderTheme.trackHeight ?? 42.0;
+    final trackTop = offset.dy + (parentBox.size.height - trackHeight) / 2;
+    return Rect.fromLTWH(offset.dx, trackTop, parentBox.size.width, trackHeight);
+  }
+}
+
 class _PremiumSliderCard extends StatelessWidget {
   final String label;
   final int value;
@@ -386,7 +403,7 @@ class _PremiumSliderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final percent = ((value - min) / (max - min)).clamp(0.0, 1.0);
+    final percent = max == min ? 0.0 : ((value - min) / (max - min)).clamp(0.0, 1.0);
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 180),
@@ -497,75 +514,70 @@ class _PremiumSliderCard extends StatelessWidget {
                           ),
                           LayoutBuilder(
                             builder: (context, constraints) {
-                              const knobWidth = 80.0;
-                              final rawWidth = constraints.maxWidth * percent;
-                              final fillWidth = percent <= 0
-                                  ? 0.0
-                                  : rawWidth < knobWidth
-                                      ? knobWidth
-                                      : rawWidth;
-                              return Align(
+                              const knobSize = 22.0;
+                              final trackWidth = constraints.maxWidth;
+                              final knobLeft = (trackWidth - knobSize) * percent;
+                              final fillWidth = (knobLeft + knobSize).clamp(18.0, trackWidth);
+                              return Stack(
                                 alignment: Alignment.centerLeft,
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 160),
-                                  curve: Curves.easeOutCubic,
-                                  height: 18,
-                                  width: fillWidth,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(999),
-                                    gradient: LinearGradient(
-                                      colors: gradientColors,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: gradientColors.last.withOpacity(
-                                            isDimmed ? 0.10 : 0.22),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 4),
-                                        spreadRadius: -5,
+                                children: [
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Container(
+                                      height: 18,
+                                      width: fillWidth,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(999),
+                                        gradient: LinearGradient(
+                                          colors: gradientColors,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: gradientColors.last.withOpacity(
+                                                isDimmed ? 0.10 : 0.22),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                            spreadRadius: -5,
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                  child: fillWidth == 0
-                                      ? null
-                                      : Align(
-                                          alignment: Alignment.centerRight,
-                                          child: Container(
-                                            width: 20,
-                                            height: 20,
-                                            margin:
-                                                const EdgeInsets.only(right: 2),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(
-                                                  isDimmed ? 0.78 : 0.92),
-                                              borderRadius:
-                                                  BorderRadius.circular(999),
-                                              border: Border.all(
-                                                color: Colors.white
-                                                    .withOpacity(0.70),
-                                              ),
-                                              boxShadow: const [
-                                                BoxShadow(
-                                                  color: Color(0x18000000),
-                                                  blurRadius: 10,
-                                                  offset: Offset(0, 3),
-                                                ),
-                                              ],
-                                            ),
-                                            child: Center(
-                                              child: Container(
-                                                width: 4,
-                                                height: 13,
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.slate300,
-                                                  borderRadius:
-                                                      BorderRadius.circular(99),
-                                                ),
-                                              ),
-                                            ),
+                                  Positioned(
+                                    left: knobLeft,
+                                    child: Container(
+                                      width: knobSize,
+                                      height: knobSize,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(
+                                            isDimmed ? 0.82 : 0.98),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 1.5,
+                                        ),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: Color(0x20000000),
+                                            blurRadius: 8,
+                                            offset: Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Center(
+                                        child: Container(
+                                          width: 4,
+                                          height: 12,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.slate300,
+                                            borderRadius:
+                                                BorderRadius.circular(99),
                                           ),
                                         ),
-                                ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               );
                             },
                           ),
@@ -582,10 +594,10 @@ class _PremiumSliderCard extends StatelessWidget {
                                     enabledThumbRadius: 0),
                                 overlayShape: const RoundSliderOverlayShape(
                                     overlayRadius: 0),
-                                trackShape: const RoundedRectSliderTrackShape(),
+                                trackShape: const _FullWidthTrackShape(),
                               ),
                               child: Slider(
-                                value: value.toDouble(),
+                                value: value.toDouble().clamp(min.toDouble(), max.toDouble()),
                                 min: min.toDouble(),
                                 max: max.toDouble(),
                                 onChanged: onChanged,
