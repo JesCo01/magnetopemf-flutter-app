@@ -1,0 +1,36 @@
+name: magneto_pro
+description: "Aplicacion Flutter del prototipo MagnetoPEMF para control BLE y registro local de sesiones."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.1 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.6
+  flutter_riverpod: ^2.4.9
+  go_router: ^13.2.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  google_fonts: ^6.2.1
+  intl: ^0.19.0
+  flutter_blue_plus: 1.30.0
+  permission_handler: ^11.3.1
+  shared_preferences: ^2.3.3
+  awesome_dialog: ^3.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  build_runner: ^2.4.8
+  hive_generator: ^2.0.1
+  flutter_lints: ^3.0.0
+
+flutter:
+
+  uses-material-design: true
